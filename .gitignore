@@ -111,6 +111,7 @@ nbactions.xml
 nb-configuration.xml
 .nb-gradle/
 builds/
+builds
 
 
 # Sublime Text
