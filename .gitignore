@@ -85,6 +85,7 @@ phpunit
 # Composer
 #-------------------------
 vendor/
+composer.lock
 
 #-------------------------
 # IDE / Development Files
@@ -110,6 +111,7 @@ nbactions.xml
 nb-configuration.xml
 .nb-gradle/
 
+
 # Sublime Text
 *.tmlanguage.cache
 *.tmPreferences.cache
@@ -118,6 +120,7 @@ nb-configuration.xml
 *.sublime-project
 .phpintel
 /api/
+
 
 # Visual Studio Code
 .vscode/
@@ -146,11 +149,14 @@ nb-configuration.xml
 !*/cache/index.html
 !*/cache/.htaccess
 
+
+
 # CodeIgniter 3 Specific Ignore Rules
 application/logs/*
 !application/logs/index.html
 !application/logs/.htaccess
-
+application/cache/*
+/vendor/
 # CodeIgniter 4 Documentation Build Files
 user_guide_src/build/*
 user_guide_src/cilexer/build/*
@@ -311,3 +317,5 @@ dist
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+/.php-cs-fixer.php
