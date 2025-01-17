@@ -11,155 +11,63 @@ use Psr\Log\LoggerInterface;
 
 class WhatsApp extends Controller
 {
+    // URL Baileys service
+    protected $baileysUrl = "http://localhost:3000";
+
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
     }
 
-    // Function untuk mengambil QR code
-    public function getQR()
+    // Fungsi untuk mengirim pesan
+    public function sendMessage()
     {
-        $client = \Config\Services::curlrequest();
-        $response = $client->get('http://localhost:3000/get-qr');
+        // Ambil data dari request
+        $to = $this->request->getVar("to");
+        $message = $this->request->getVar("message");
 
-        $data = json_decode($response->getBody(), true);
-
-        if (isset($data['qr'])) {
+        if (empty($to) || empty($message)) {
             return $this->response->setJSON([
-                'success' => true,
-                'qr' => $data['qr'], // QR code dalam bentuk base64
+                "status" => "error",
+                "message" => "Parameter 'to' dan 'message' harus diisi!",
             ]);
-        } else {
+        }
+
+        // Kirim permintaan ke Baileys service
+        $client = \Config\Services::curlrequest();
+        try {
+            $response = $client->post($this->baileysUrl . "/send-message", [
+                "json" => [
+                    "to" => $to,
+                    "message" => $message,
+                ],
+            ]);
+
+            // Ambil respons dari Baileys service
+            $responseData = json_decode($response->getBody(), true);
+            return $this->response->setJSON($responseData);
+        } catch (\Exception $e) {
             return $this->response->setJSON([
-                'success' => false,
-                'error' => 'QR code not available.',
+                "status" => "error",
+                "message" => "Gagal mengirim pesan: " . $e->getMessage(),
             ]);
         }
     }
-    public function showQR()
+
+    // Fungsi untuk memeriksa status koneksi WhatsApp
+    public function checkConnection()
     {
+        // Kirim permintaan ke Baileys service
         $client = \Config\Services::curlrequest();
         try {
-            $response = $client->get('http://localhost:3000/get-qr');
-            $data = json_decode($response->getBody(), true);
-
-            if (isset($data['qr'])) {
-                $qrCode = $data['qr'];
-                $attempts = $data['attempts'];
-            } else {
-                $qrCode = null;
-                $attempts = $data['attempts'];
-            }
+            $response = $client->get($this->baileysUrl . "/check-connection");
+            $responseData = json_decode($response->getBody(), true);
+            return $this->response->setJSON($responseData);
         } catch (\Exception $e) {
-            return view('whatsapp-qr', [
-                'error' => 'Gagal terhubung ke server Node.js.',
-                'qrCode' => null,
-                'attempts' => 0,
+            return $this->response->setJSON([
+                "status" => "error",
+                "message" => "Gagal memeriksa koneksi: " . $e->getMessage(),
             ]);
-        }
-
-        return view('whatsapp-qr', [
-            'qrCode' => $qrCode,
-            'attempts' => $attempts,
-            'error' => null,
-        ]);
-    }
-    public function retryQR()
-    {
-        // Reset percobaan QR code di server Node.js (opsional)
-        $client = \Config\Services::curlrequest();
-        try {
-            $client->get('http://localhost:3000/reset-qr-attempts'); // Endpoint untuk reset percobaan
-        } catch (\Exception $e) {
-            // Tangani error jika server Node.js tidak merespons
-        }
-
-        // Redirect kembali ke halaman QR code
-        return redirect()->to('/whatsapp/qr');
-    }
-    // Function untuk menampilkan halaman QR code
-    public function showQRok()
-    {
-        // Cek koneksi ke server Node.js
-        if (!$this->checkNodeJsServer()) {
-            return view('whatsapp-qr', [
-                'error' => 'Server Node.js tidak tersedia. Silakan coba lagi nanti.',
-                'qrCode' => null,
-            ]);
-        }
-
-        // Ambil QR code dari layanan Baileys
-        $client = \Config\Services::curlrequest();
-        try {
-            $response = $client->get('http://localhost:3000/get-qr');
-            $data = json_decode($response->getBody(), true);
-
-            if (isset($data['qr'])) {
-                $qrCode = $data['qr'];
-            } else {
-                $qrCode = null;
-            }
-        } catch (\Exception $e) {
-            // Tangani error jika server Node.js tidak merespons
-            return view('whatsapp-qr', [
-                'error' => 'Gagal terhubung ke server Node.js. Pastikan server Baileys sedang berjalan.',
-                'qrCode' => null,
-            ]);
-        }
-
-        // Kirim data QR code ke view
-        return view('whatsapp-qr', [
-            'qrCode' => $qrCode,
-            'error' => null,
-        ]);
-    }
-    // Function untuk menampilkan halaman QR code
-    public function showQRx()
-    {
-        // Cek koneksi ke server Node.js
-        if (!$this->checkNodeJsServer()) {
-            return view('whatsapp-qr', [
-                'error' => 'Server Node.js tidak tersedia. Silakan coba lagi nanti.',
-                'qrCode' => null,
-            ]);
-        }
-        // Ambil QR code dari layanan Baileys
-        $client = \Config\Services::curlrequest();
-        $response = $client->get('http://localhost:3000/get-qr');
-
-        $data = json_decode($response->getBody(), true);
-
-        if (isset($data['qr'])) {
-            $qrCode = $data['qr'];
-        } else {
-            $qrCode = null;
-        }
-
-        // Kirim data QR code ke view
-        return view('whatsapp-qr', ['qrCode' => $qrCode]);
-    }
-    // / Function untuk mengecek ketersediaan server Node.js
-    public function checkserv()
-    {
-        // Cek koneksi ke server Node.js
-        if (!$this->checkNodeJsServer()) {
-            return view('whatsapp-qr', [
-                'error' => 'Server Node.js tidak tersedia. Silakan coba lagi nanti.',
-                'qrCode' => null,
-            ]);
-        } else {
-            print_r($this->checkNodeJsServer());
-        }
-    }
-    private function checkNodeJsServer()
-    {
-        $client = \Config\Services::curlrequest();
-        try {
-            // Coba melakukan ping ke server Node.js
-            $response = $client->get('http://localhost:3000');
-            return ($response->getStatusCode() === 200);
-        } catch (\Exception $e) {
-            return false;
         }
     }
 }
