@@ -141,7 +141,7 @@ builds
 .phpunit.result.cache
 .idea/
 .DS_Store
-
+/public/assets/themes/*
 # CodeIgniter 4 and 3 Shared Ignore Rules
 */config/development
 */logs/log-*.php
